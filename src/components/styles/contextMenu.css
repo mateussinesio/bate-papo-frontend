@@ -1,0 +1,24 @@
+.context-menu {
+    position: absolute;
+    background-color: white;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 5px;
+    z-index: 1000;
+  }
+  
+  .context-menu button {
+    display: block;
+    width: 100%;
+    padding: 5px;
+    text-align: left;
+    border: none;
+    background: none;
+    cursor: pointer;
+  }
+  
+  .context-menu button:hover {
+    color: white;
+    background-color: gray;
+    border-radius: 3px;
+  }
