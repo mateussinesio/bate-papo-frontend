@@ -49,17 +49,17 @@ const Register: React.FC = () => {
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
+          placeholder="Usuário"
           required
         />
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
+          placeholder="Senha"
           required
         />
-        <button type="submit">Register</button>
+        <button type="submit">Registrar-se</button>
       </form>
     </div>
   );

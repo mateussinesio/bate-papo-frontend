@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
+import api from '../api';
 import './styles/login.css';
 
 const Login: React.FC = () => {
@@ -20,14 +20,10 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:8082/auth/login', { username, password }, {
-        withCredentials: true,
-      });
+      const response = await api.post('/auth/login', { username, password });
 
       if (response.status === 200) {
-        const userInfoResponse = await axios.get('http://localhost:8082/auth/userinfo', {
-          withCredentials: true,
-        });
+        const userInfoResponse = await api.get('/auth/userinfo');
         setUser(userInfoResponse.data);
         navigate('/chat');
       }
