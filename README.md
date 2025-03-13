@@ -6,7 +6,7 @@ A aplicação dá ao usuário controle total de suas mensagens, possibilitando a
 
 Utilizei **React**, **TypeScript**, **ReactRouter** e **axios**.
 
-[Ver projeto no meu portfolio.](https://mateussinesio.com/projetos/minha_midia_fisica/)
+[Ver projeto no meu portfolio.](https://mateussinesio.com/projetos/bate_papo/)
 
 Utilize "visitante" como usuário e senha na página de login da aplicação.
 
