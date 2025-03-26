@@ -7,7 +7,6 @@ import './styles/contextMenu.css';
 
 interface Message {
   id: string;
-  messageId: string;
   sender: string;
   content: string;
   timestamp: string;
@@ -22,6 +21,12 @@ export default function Chat() {
   const [editInput, setEditInput] = useState('');
   const ws = useRef<WebSocket | null>(null);
   const navigate = useNavigate();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Função para rolar até o final das mensagens
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (!user) {
@@ -36,13 +41,14 @@ export default function Chat() {
 
         ws.current = new WebSocket('ws://localhost:8082/ws/chat');
 
+        // Configuração silenciosa do WebSocket (sem logs)
         ws.current.onmessage = (event) => {
           const data = JSON.parse(event.data);
 
           if (data.action === 'edit') {
             setMessages((prev) =>
               prev.map(msg =>
-                msg.messageId === data.messageId
+                msg.id === data.id
                   ? { ...msg, content: data.content }
                   : msg
               )
@@ -54,13 +60,18 @@ export default function Chat() {
           } else {
             const message: Message = data;
             setMessages((prev) => {
-              if (!prev.some(msg => msg.messageId === message.messageId)) {
+              if (!prev.some(msg => msg.id === message.id)) {
                 return [...prev, message];
               }
               return prev;
             });
           }
         };
+
+        // Handlers vazios para evitar logs
+        ws.current.onerror = () => {};
+        ws.current.onclose = () => {};
+        
       } catch (error) {
         console.error('Erro ao carregar mensagens', error);
       }
@@ -69,12 +80,19 @@ export default function Chat() {
     loadMessages();
 
     return () => {
-      ws.current?.close();
+      if (ws.current) {
+        ws.current.close();
+      }
     };
   }, [user, navigate]);
 
+  // Rola para baixo quando novas mensagens são adicionadas
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const sendMessage = () => {
-    if (input.trim() && ws.current && user) {
+    if (input.trim() && ws.current?.readyState === WebSocket.OPEN && user) {
       const messageToSend = {
         sender: user,
         content: input,
@@ -89,7 +107,7 @@ export default function Chat() {
   const handleContextMenu = (e: React.MouseEvent, message: Message) => {
     e.preventDefault();
     if (message.sender === user) {
-      setContextMenu({ x: e.pageX, y: e.pageY, message });
+      setContextMenu({ x: e.clientX, y: e.clientY, message });
     }
   };
 
@@ -123,13 +141,12 @@ export default function Chat() {
     if (editMessage) {
       try {
         await api.put(`/chat/edit-message/${editMessage.id}`, {
-          ...editMessage,
           content: editInput,
         }, { withCredentials: true });
 
         setMessages((prev) =>
           prev.map(msg =>
-            msg.messageId === editMessage.messageId
+            msg.id === editMessage.id
               ? { ...msg, content: editInput }
               : msg
           )
@@ -140,6 +157,21 @@ export default function Chat() {
       } catch (error) {
         console.error('Erro ao editar a mensagem', error);
       }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      sendMessage();
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveEditMessage();
+    } else if (e.key === 'Escape') {
+      setEditMessage(null);
+      setEditInput('');
     }
   };
 
@@ -159,31 +191,42 @@ export default function Chat() {
       <div className="chat-container">
         <div className="messages-container">
           {messages.map((msg) => (
-            <div className='messages' key={msg.messageId} onContextMenu={(e) => handleContextMenu(e, msg)}>
-              <strong>{msg.sender}:</strong> {editMessage?.messageId === msg.messageId ? (
+            <div
+              key={msg.id}
+              className={`message ${msg.sender === user ? 'own-message' : ''}`}
+              onContextMenu={(e) => handleContextMenu(e, msg)}
+            >
+              <span className="message-sender">{msg.sender}:</span>
+              {editMessage?.id === msg.id ? (
                 <input
+                  className="edit-input"
                   value={editInput}
                   onChange={(e) => setEditInput(e.target.value)}
                   onBlur={saveEditMessage}
+                  onKeyDown={handleEditKeyDown}
                   autoFocus
                 />
               ) : (
-                msg.content
+                <span className="message-content">{msg.content}</span>
               )}
-              <em>({new Date(msg.timestamp).toLocaleTimeString()})</em>
+              <span className="message-time">
+                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
         <div className="chat-input">
           <input
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') sendMessage();
-            }}
+            onKeyDown={handleKeyDown}
             placeholder="Digite uma mensagem..."
           />
-          <button onClick={sendMessage}>Enviar</button>
+          <button onClick={sendMessage} disabled={!input.trim()}>
+            Enviar
+          </button>
         </div>
       </div>
 
@@ -194,6 +237,7 @@ export default function Chat() {
             top: contextMenu.y,
             left: contextMenu.x,
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           <button onClick={() => startEditMessage(contextMenu.message)}>Editar</button>
           <button onClick={() => deleteMessage(contextMenu.message.id)}>
