@@ -23,7 +23,6 @@ export default function Chat() {
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Função para rolar até o final das mensagens
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -41,7 +40,6 @@ export default function Chat() {
 
         ws.current = new WebSocket('ws://localhost:8082/ws/chat');
 
-        // Configuração silenciosa do WebSocket (sem logs)
         ws.current.onmessage = (event) => {
           const data = JSON.parse(event.data);
 
@@ -68,7 +66,6 @@ export default function Chat() {
           }
         };
 
-        // Handlers vazios para evitar logs
         ws.current.onerror = () => {};
         ws.current.onclose = () => {};
         
@@ -86,7 +83,6 @@ export default function Chat() {
     };
   }, [user, navigate]);
 
-  // Rola para baixo quando novas mensagens são adicionadas
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
